@@ -66,97 +66,9 @@ def create_combined_table():
     connection.commit()
     connection.close()
 
-
-def create_user_submission_record_table():
-    connection = sqlite3.connect('database.db')
-    cursor = connection.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS UserSubmissionRecord (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            UniqueCodeUser TEXT,
-            BusinessFunction TEXT,  
-            MeasuringEltUser TEXT,
-            RatingUser INTEGER,
-            SUbCategoryUser TEXT,
-            AsIsQuestionsUser TEXT,
-            AnswersUserAsIs TEXT,
-            ToBeQuestionsUser TEXT,
-            AnswersUserToBe TEXT,   
-            MaxRatingUser INTEGER DEFAULT 5,
-            ExpectedCumSum INTEGER,
-            UserCumSumAsIs INTEGER,
-            UserCumSumToBe INTEGER
-        )
-    ''')
-    connection.commit()
-    connection.close()
-
-
-# Recreate the table to ensure the schema is correct
-create_user_submission_record_table()
-
-# TO hold trimmed records
-
-
-def create_user_submission_trimmed_record_table():
-    connection = sqlite3.connect('database.db')
-    cursor = connection.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS UserSubmissionRecordTrimmed (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            UniqueCodeUser TEXT,
-            BusinessFunction TEXT,  
-            MeasuringEltUser TEXT,
-            RatingUser INTEGER,
-            SUbCategoryUser TEXT,
-            AsIsQuestionsUser TEXT,
-            AnswersUserAsIs TEXT,
-            ToBeQuestionsUser TEXT,
-            AnswersUserToBe TEXT,   
-            MaxRatingUser INTEGER DEFAULT 5,
-            ExpectedCumSum INTEGER,
-            UserCumSumAsIs INTEGER,
-            UserCumSumToBe INTEGER
-        )
-    ''')
-    connection.commit()
-    connection.close()
-
-
-def create_final_feedback_data():
-    connection = sqlite3.connect('database.db')
-    cursor = connection.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS UserSubmittedFeedback (
-            UniqueCodeUser TEXT,
-            BusinessFunction TEXT,  
-            MeasuringEltUser TEXT,
-            RatingUser INTEGER,
-            SUbCategoryUser TEXT,
-            AnswersUserAsIs TEXT,
-            AnswersUserToBe TEXT,   
-            MaxRatingUser INTEGER DEFAULT 5,
-            ExpectedCumSum INTEGER,
-            UserCumSumAsIs INTEGER,
-            UserCumSumToBe INTEGER,
-            PercentageAsIs INTEGER,
-            PercentageToBe INTEGER,
-            FeedbackAsIs TEXT,
-            FeedbackToBe TEXT,
-            GrowthRate INTEGER,
-            Duration INTEGER
-                   
-        )
-    ''')
-    connection.commit()
-    connection.close()
-
-
 create_user_table()
 create_combined_table()
-create_user_submission_record_table()
-create_final_feedback_data()
-create_user_submission_trimmed_record_table()
+
 
 
 @app.route('/')
@@ -310,10 +222,8 @@ def CombinedTiers():
         subCategory_name = request.form['subCategory_name']
 
         # Dynamically generate the as_is_question and to_be_question
-        as_is_question = f"Wrt to the 10 best companies incorporating industry 4.0 key enablers making them digitally mature and transformed, how will you best describe your {
-            subCategory_name}?"
-        to_be_question = f"Wrt to the 10 best companies incorporating industry 4.0 key enablers making them digitally mature and transformed, where would you want to find {
-            subCategory_name} in the future?"
+        as_is_question = f"""Wrt to the 10 best companies incorporating industry 4.0 key enablers making them digitally mature and transformed, how will you best describe your {subCategory_name}?"""
+        to_be_question = f"""Wrt to the 10 best companies incorporating industry 4.0 key enablers making them digitally mature and transformed, where would you want to find {subCategory_name} in the future?"""
 
         MaxRating = request.form['MaxRating']
 
@@ -490,6 +400,7 @@ def process_csv(csv_file):
         as_is_question = f"""Wrt to the 10 best companies incorporating industry 4.0 key enablers making them digitally mature and transformed, how will you best describe your {sub_category}?"""
         to_be_question = f"""Wrt to the 10 best companies incorporating industry 4.0 key enablers making them digitally mature and transformed, where would you want to find {sub_category} in the future?"""
 
+
         cursor.execute('''
             INSERT INTO CombinedTable (id, BusinessSector, BusinessFunction, MeasuringElt, Rating, SUbCategory, AsIsQuestions, ToBeQuestions, MaxRating)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -500,6 +411,76 @@ def process_csv(csv_file):
 
 
 # Normalizing the data and inserting into a new database  table 
+def normalize_business_function():
+    connection = sqlite3.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('''
+        WITH RECURSIVE split(id, BusinessFunction, MeasuringEltUser, RatingUser, SUbCategoryUser, AsIsQuestionsUser, AnswersUserAsIs, ToBeQuestionsUser, AnswersUserToBe, MaxRatingUser, ExpectedCumSum, UserCumSumAsIs, UserCumSumToBe, value, rest) AS (
+            SELECT
+                id,
+                UniqueCodeUser,
+                BusinessFunction,
+                MeasuringEltUser,
+                RatingUser,
+                SUbCategoryUser,
+                AsIsQuestionsUser,
+                AnswersUserAsIs,
+                ToBeQuestionsUser,
+                AnswersUserToBe,
+                MaxRatingUser,
+                ExpectedCumSum,
+                UserCumSumAsIs,
+                UserCumSumToBe,
+                TRIM(SUBSTR(BusinessFunction || ',', 1, INSTR(BusinessFunction || ',', ',') - 1)),
+                TRIM(SUBSTR(BusinessFunction || ',', INSTR(BusinessFunction || ',', ',') + 1))
+            FROM UserSubmissionRecord
+            UNION ALL
+            SELECT
+                id,
+                UniqueCodeUser,
+                BusinessFunction,
+                MeasuringEltUser,
+                RatingUser,
+                SUbCategoryUser,
+                AsIsQuestionsUser,
+                AnswersUserAsIs,
+                ToBeQuestionsUser,
+                AnswersUserToBe,
+                MaxRatingUser,
+                ExpectedCumSum,
+                UserCumSumAsIs,
+                UserCumSumToBe,
+                TRIM(SUBSTR(rest, 1, INSTR(rest, ',') - 1)),
+                TRIM(SUBSTR(rest, INSTR(rest, ',') + 1))
+            FROM split
+            WHERE rest != ''
+        )
+        INSERT INTO UserSubmissionRecordTrimmed (
+            UniqueCodeUser, BusinessFunction, MeasuringEltUser, RatingUser, SUbCategoryUser, 
+            AsIsQuestionsUser, AnswersUserAsIs, ToBeQuestionsUser, AnswersUserToBe, 
+            MaxRatingUser, ExpectedCumSum, UserCumSumAsIs, UserCumSumToBe
+        )
+        SELECT 
+            UniqueCodeUser,
+            value AS BusinessFunction,
+            MeasuringEltUser,
+            RatingUser,
+            SUbCategoryUser,
+            AsIsQuestionsUser,
+            AnswersUserAsIs,
+            ToBeQuestionsUser,
+            AnswersUserToBe,
+            MaxRatingUser,
+            ExpectedCumSum,
+            UserCumSumAsIs,
+            UserCumSumToBe
+        FROM split
+        WHERE value != '';
+    ''')
+
+    connection.commit()
+    connection.close()
 
 
 
