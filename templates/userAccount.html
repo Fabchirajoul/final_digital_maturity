@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DM | Welcome</title>
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/static/images/JBS-retina-copy.png.webp">
+    <script src="/static/js/code.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+
+</head>
+
+<body x-data="AutomatedDigitalMaturity" x-cloak>
+    <main class="container">
+        <section>
+            <div class="dashboard_main_admin">
+                <h1 class="item"><a href="/select_business_sector_user" class="item" style="float: right;">USER CONTROL
+                        PANEL</a></h1>
+                <button class="create_user" x-on:click="openUserAccount('enter_unique_code')">ENTER UNIQUE CODE</button>
+                <button class="create_user" x-on:click="openUserAccount('user_instructions')">INSTRUCTIONS</button>
+                <a href="/logout" class="item" style="float: right;">SIGN OUT</a>
+            </div>
+        </section><br>
+
+        <section>
+            <div class="userAccountParent">
+                <div class="userAccount_left">
+                    {% if user_photo_base64 %}
+                    <img src="data:image/png;base64,{{ user_photo_base64 }}" alt="User Photo" class="images">
+                    {% else %}
+                    <p>No photo available.</p>
+                    {% endif %}
+
+                    <h1>Welcome, {{ user[1] }}</h1>
+                </div>
+
+                <div class="get_started" x-show="get_started">
+                    <table class="item">
+                        <tr>
+                            <td>S/N</td>
+                            <td>ACTION</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>SELECT AND SUBMIT A BUSINESS SECTOR</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>COPY AND SAVE YOUR UNIQUE CODE</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>ANSWER THE "AS IS" AND "TO BE"</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>SUBMIT THE ANSWERS</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>CLICK ON THE "ENTER UNIQUE CODE BUTTON"</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>ENTER AND SUBMIT THE COPIED UNIQUE CODE IN THE TEXT FIELD</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>CLICK ON THE "VIEW FEEDBACK ANALYSIS"</td>
+                        </tr>
+                    </table>
+
+                    <button class="create_user" style="float: right;"
+                        x-on:click="openUserAccount('select_your_business_sector')">GET STARTED</button>
+
+                    <!-- Error Message Section -->
+                    {% if error_message %}
+                    <section>
+                        <p class="error">{{ error_message }}</p>
+                    </section>
+                    {% endif %}
+                </div>
+
+                <div x-show="select_your_business_sector" class="get_started">
+                    
+                </div>
+
+                <div x-show="enter_unique_code" class="get_started">
+
+
+                    
+                </div>
+            </div>
+        </section><br><br>
+
+      
+
+      
+
+
+       
+
+       
+    </main>
+
+</body>
+
+</html>
